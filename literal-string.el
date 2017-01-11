@@ -1,12 +1,13 @@
 ;; -*- lexical-binding: t -*-
 
 (defun literal-string-inside-string? ()
-  "Returns non-nil if inside string, else nil.
-  Result depends syntax table's string quote character."
+  "Returns non-nil if inside string, else nil. Result depends
+syntax table's string quote character."
   (nth 3 (syntax-ppss)))
 
-(defun literal-string-current-string ()
-  "list of start and end of content of current literal string."
+(defun literal-string-region ()
+  "start and end markers of current literal string. `nil` if
+point is not at or in a string literal"
   (when (literal-string-inside-string?)
     (save-excursion
       (search-forward-regexp "[^\\\\]\"")
@@ -31,14 +32,16 @@
       indent-count)))
 
 (defun literal-string-docstring-deindent ()
-  "Remove indentation of lines after the first one. Returns the
-amount of indentation removed."
+  "Remove extraneous indentation of lines after the first
+one. Returns the amount of indentation removed."
   (when-let (level (literal-string-docstring-indent-level))
     (when (not (zerop level))
       (indent-rigidly (point-min) (point-max) (- level))
       level)))
 
 (defun literal-string-docstring-reindent ()
+  "Re-indent by the amount removed by
+`literal-string-docstring-deindent`"
   (when-let (level literal-string-source-indent-level)
     (when (not (zerop level))
       (save-excursion
@@ -49,7 +52,9 @@ amount of indentation removed."
 
 (defun literal-string-replace-all (from to)
   (save-excursion
-    (perform-replace from to nil nil nil nil nil (point-min) (point-max))))
+    (goto-char (point-min))
+    (while (search-forward from nil t)
+      (replace-match to t t))))
 
 (defun literal-string-unescape ()
   (literal-string-replace-all "\\\"" "\"")
@@ -66,7 +71,7 @@ amount of indentation removed."
   "Indent current string literal.
   Removes docstring indentation"
   (interactive)
-  (when-let (region (literal-string-current-string))
+  (when-let (region (literal-string-region))
     (let ((edit-buffer (get-buffer-create (format "*Edit Literal String <%s>*" (buffer-name)))))
       (apply #'copy-to-buffer edit-buffer region)
       (switch-to-buffer edit-buffer)
