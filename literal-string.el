@@ -4,8 +4,6 @@
 ;; URL: https://github.com/joodie/literal-string-mode/
 ;; Package-Requires: (markdown-mode)
 
-;; 
-
 (defun literal-string-inside-string? ()
   "Returns non-nil if inside string, else nil. Result depends on
 syntax table's string quote character."
@@ -73,6 +71,14 @@ one. Returns the amount of indentation removed."
 (defvar-local literal-string-source-indent-level nil)
 (defvar-local literal-string-source-region nil)
 
+(defgroup literal-string
+  ()
+  "Minor modes for editing string literals in source code.")
+
+(defcustom literal-string-fill-column 62
+  "Fill column to use in the string editing buffer. `nil` means
+do not set `fill-column`")
+
 (defun literal-string-edit-string ()
   "Indent current string literal.
 Removes docstring indentation"
@@ -82,7 +88,6 @@ Removes docstring indentation"
       (apply #'copy-to-buffer edit-buffer region)
       (switch-to-buffer edit-buffer)
       (markdown-mode) ; first - changing major mode clears local vars!
-      (set-fill-column 63)
       (setq literal-string-source-region region
             literal-string-source-indent-level (literal-string-docstring-deindent))
       (literal-string-unescape)
@@ -130,13 +135,14 @@ automatic (un)escaping of quotes and docstring indentation."
     map))
 
 (define-minor-mode literal-string-editing-mode
-  "Minor mode used in edit buffer by `literal-string-mode` do vd
-d d e"
+  "Minor mode used in edit buffer by `literal-string-mode`."
   :lighter " edit-str"
   :keymap literal-string-editing-mode-keymap
   (setq-local header-line-format
               (substitute-command-keys
                "Edit, then exit with `\\[literal-string-edit-string-exit]' or abort with \
-`\\[literal-string-edit-string-abort]'")))
+`\\[literal-string-edit-string-abort]'"))
+  (when literal-string-fill-column
+    (set-fill-column literal-string-fill-column)))
 
 (provide 'literal-string)
