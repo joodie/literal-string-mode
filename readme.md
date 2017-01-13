@@ -13,7 +13,6 @@
 
   - Make the editing buffer's major mode customizable
   - Make de/re-indentation customizable
-  - Make fill-column customizable
   - Finish packaging: autoloads, requires
 
 
