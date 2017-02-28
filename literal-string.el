@@ -3,9 +3,9 @@
 ;; Copyright 2017 Joost Diepenmaat
 
 ;; Author: Joost Diepenmaat <joost@zeekat.nl>
-;; Keywords: lisp, tools, programming, docs
+;; Keywords: lisp, tools, docs
 ;; URL: https://github.com/joodie/literal-string-mode/
-;; Package-Requires: ((markdown-mode "2") (emacs "25"))
+;; Package-Requires: ((markdown-mode "2.0") (emacs "25"))
 ;; Package-Version: 0.1
 
 ;;; Commentary:
