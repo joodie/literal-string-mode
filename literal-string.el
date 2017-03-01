@@ -130,7 +130,8 @@ Uses indent level removed by `literal-string--docstring-deindent`."
 
 (defcustom literal-string-fill-column 62
   "Fill column to use in the string editing buffer.
-`nil` means do not set `fill-column`")
+`nil` means do not set `fill-column`"
+  :type 'integer)
 
 ;;;###autoload
 (defun literal-string-edit-string ()
