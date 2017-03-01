@@ -32,6 +32,8 @@
 
 ;;; Code:
 
+(require 'subr-x)
+
 (defun literal-string--inside-string? ()
   "Return non-nil if inside string, else nil.
 Result depends on syntax table's string quote character."
