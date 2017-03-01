@@ -8,6 +8,10 @@
 ;; Package-Requires: ((markdown-mode "2.0") (emacs "25"))
 ;; Package-Version: 0.1
 
+;; Contributors:
+;; - Joost Diepenmaat
+;; - Syohei YOSHIDA
+
 ;;; Commentary:
 ;;;
 ;;; Literal String Mode is a minor mode for editing multi-line literal
@@ -29,6 +33,21 @@
 ;;;
 ;;; To enable literal-string-mode in your preferred programming modes,
 ;;; turn it on using the relevant mode hooks.
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 2, or (at your option)
+;; any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program; if not, write to the Free Software
+;; Foundation, Inc., 51 Franklin Street, Fifth Floor,
+;; Boston, MA 02110-1301, USA.
 
 ;;; Code:
 
@@ -106,7 +125,8 @@ Uses indent level removed by `literal-string--docstring-deindent`."
 
 (defgroup literal-string
   ()
-  "Minor modes for editing string literals in source code.")
+  "Minor modes for editing string literals in source code."
+  :group 'tools :group 'lisp)
 
 (defcustom literal-string-fill-column 62
   "Fill column to use in the string editing buffer.
@@ -141,7 +161,7 @@ buffer."
       (literal-string--docstring-reindent)
       (switch-to-buffer source-buffer)
       (apply #'delete-region region)
-      (insert-buffer string-buffer)
+      (insert-buffer-substring string-buffer)
       (set-marker (car region) nil nil)
       (set-marker (cadr region) nil nil)
       (kill-buffer string-buffer))
