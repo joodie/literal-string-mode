@@ -205,8 +205,8 @@ editing."
             (existing-buffer (edit-indirect--search-for-edit-indirect (car region) (cadr region))))
         (with-current-buffer (edit-indirect-region (car region) (cadr region) t)
           (when (null existing-buffer)
-            (literal-string--prepare-buffer)
-            (funcall mode))))
+            (funcall mode)
+            (literal-string--prepare-buffer))))
     (user-error "Not at a string literal")))
 
 (defvar literal-string-mode-keymap
