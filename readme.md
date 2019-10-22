@@ -11,8 +11,9 @@
 
 ## Todo:
 
-  - Make the editing buffer's major mode customizable
-  - Make de/re-indentation customizable
-  - Finish packaging: autoloads, requires
+  - [ ] Make the editing buffer's major mode customizable
+  - [ ] Make de/re-indentation customizable
+  - [X] Finish packaging: autoloads, requires
+
 
 
