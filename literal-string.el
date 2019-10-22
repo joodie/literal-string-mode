@@ -1,6 +1,6 @@
 ;;; literal-string.el --- edit string literals in a dedicated buffer -*- lexical-binding: t -*-
 
-;; Copyright 2017 Joost Diepenmaat
+;; Copyright 2017-2019 Joost Diepenmaat
 
 ;; Author: Joost Diepenmaat <joost@zeekat.nl>
 ;; Keywords: lisp, tools, docs
@@ -17,22 +17,23 @@
 ;;; Literal String Mode is a minor mode for editing multi-line literal
 ;;; strings in a dedicated buffer.
 ;;;
-;;; When enabled, edit the literal string at point using C-c '
+;;; When enabled, edit the literal string at point using C-c "
 ;;; (literal-string-edit-string), this will copy the (unescaped and
 ;;; deindented) content of the string to a dedicated literal string
-;;; editing buffer that has Literal String Editing Mode (a minor mode)
-;;; enabled.
+;;; editing buffer using `edit-indirect`.
 ;;;
-;;; To exit the current literal string buffer copy the edited string
-;;; back into the original source buffer with correct quoting and
-;;; escape sequences, press C-c '
-;;; (literal-string-edit-string-exit).
+;;; To exit the current literal string buffer and copy the edited
+;;; string back into the original source buffer with correct quoting
+;;; and escape sequences, press C-c c (edit-indirect-commit)
 ;;;
 ;;; To discard your changes to the editing buffer, press C-c C-k
-;;; (literal-string-edit-string-abort)
+;;; (edit-indirect-abort)
 ;;;
 ;;; To enable literal-string-mode in your preferred programming modes,
 ;;; turn it on using the relevant mode hooks.
+;;;
+;;; You can customize `literal-string-editing-mode` to set the major
+;;; mode of the editing buffer. (For instance, to markdown-mode).
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -56,7 +57,7 @@
 (defun literal-string--inside-string? ()
   "Return non-nil if inside string, else nil.
 
-   Result depends on syntax table's string quote character."
+Result depends on syntax table's string quote character."
   (nth 3 (syntax-ppss)))
 
 (defvar literal-string--string-quote-regex "[^\\\\]\"")
@@ -70,7 +71,7 @@
 (defun literal-string--region ()
   "Return start and end markers of current literal string.
 
-   Returns `nil` if point is not at or in a string literal."
+Returns `nil` if point is not at or in a string literal."
   (save-excursion
     (cond
      ((and (not (literal-string--inside-string?))
@@ -163,12 +164,18 @@
 `nil` means do not set `fill-column`"
   :type 'integer)
 
+(defcustom literal-string-editing-mode 'text-mode
+  "The major mode to use in the string editing buffer."
+  :type 'symbol)
+
+(make-variable-buffer-local 'literal-string-editing-mode)
+
 (defun literal-string--prepare-buffer ()
   "Prepare the edit-indirect buffer for editing.
 
-   Unescapes characters and undoes additional indentation of
-   multi-line strings, registers a hook to restore them when
-   committing changes."
+Unescapes characters and undoes additional indentation of
+multi-line strings, registers a hook to restore them when
+committing changes."
   (literal-string--unescape)
   (let ((indent-level (literal-string--docstring-deindent)))
     (add-hook 'edit-indirect-before-commit-hook
@@ -189,15 +196,17 @@
 (defun literal-string-edit-string ()
   "Edit current string literal in a separate buffer.
 
-   Uses `edit-indirect-mode`.  Use `edit-indirect-commit` to end
-   editing."
+Uses `edit-indirect-mode`.  Use `edit-indirect-commit` to end
+editing."
   (interactive)
   (require 'edit-indirect)
   (if-let (region (literal-string--region))
-      (let ((existing-buffer (edit-indirect--search-for-edit-indirect (car region) (cadr region))))
+      (let ((mode literal-string-editing-mode) ;; buffer local, so get it out before switching
+            (existing-buffer (edit-indirect--search-for-edit-indirect (car region) (cadr region))))
         (with-current-buffer (edit-indirect-region (car region) (cadr region) t)
           (when (null existing-buffer)
-            (literal-string--prepare-buffer))))
+            (literal-string--prepare-buffer)
+            (funcall mode))))
     (user-error "Not at a string literal")))
 
 (defvar literal-string-mode-keymap
@@ -218,3 +227,7 @@ quotes and docstring indentation."
 (provide 'literal-string)
 
 ;;; literal-string.el ends here
+
+;; Local Variables:
+;; literal-string-editing-mode: markdown-mode
+;; End:

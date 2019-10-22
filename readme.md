@@ -6,14 +6,15 @@
     'literal-string)`
 
   - Enable `literal-string-mode` in your lisp modes and edit your
-    markdown-formatted docstrings by hitting `C-c '` or `M-x
+    markdown-formatted docstrings by hitting `C-c "` or `M-x
     literal-string-edit-string`
 
 ## Todo:
 
-  - [ ] Make the editing buffer's major mode customizable
+  - [X] Make the editing buffer's major mode customizable
   - [ ] Make de/re-indentation customizable
   - [X] Finish packaging: autoloads, requires
+  - [ ] Support non-lisp-style string delimiters
 
 
 
