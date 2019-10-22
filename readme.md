@@ -12,12 +12,14 @@
 ## Todo:
 
   - [X] Make the editing buffer's major mode customizable
-  - [ ] Make de/re-indentation customizable
+  - [X] Make de/re-indentation customizable
   - [X] Finish packaging: autoloads, requires
+  - [ ] Split doc-string editing and other literal string editing
   - [ ] Support non-lisp-style string delimiters
 
 ## Changes:
 
+    - 0.5 customizable indentation
     - 0.4 fix major mode switch
     - 0.3 customize major mode for edit buffer
     - 0.2 use edit-indirect mode

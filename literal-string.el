@@ -6,7 +6,7 @@
 ;; Keywords: lisp, tools, docs
 ;; URL: https://github.com/joodie/literal-string-mode/
 ;; Package-Requires: ((emacs "25") (edit-indirect "0.1.5"))
-;; Package-Version: 0.2
+;; Package-Version: 0.5
 
 ;; Contributors:
 ;; - Joost Diepenmaat
@@ -33,7 +33,7 @@
 ;;; turn it on using the relevant mode hooks.
 ;;;
 ;;; You can customize `literal-string-editing-mode` to set the major
-;;; mode of the editing buffer. (For instance, to markdown-mode).
+;;; mode of the editing buffer.  (For instance, to markdown-mode).
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -117,7 +117,7 @@ Returns `nil` if point is not at or in a string literal."
 (defun literal-string--docstring-deindent ()
   "Remove extraneous indentation of lines after the first one.
 
-   Returns the amount of indentation removed."
+Returns the amount of indentation removed."
   (when-let (level (literal-string--docstring-indent-level))
     (when (not (zerop level))
       (indent-rigidly (point-min) (point-max) (- level))
@@ -126,8 +126,8 @@ Returns `nil` if point is not at or in a string literal."
 (defun literal-string--docstring-reindent (indent-level)
   "Re-indent literal string editing buffer.
 
-   Use INDENT-LEVEL provided by previous invocation of
-   `literal-string--docstring-deindent`."
+Use INDENT-LEVEL provided by previous invocation of
+`literal-string--docstring-deindent`."
   (when (and indent-level
              (not (zerop indent-level)))
     (save-excursion
@@ -162,22 +162,75 @@ Returns `nil` if point is not at or in a string literal."
 (defcustom literal-string-fill-column 62
   "Fill column to use in the string editing buffer.
 `nil` means do not set `fill-column`"
-  :type 'integer)
+  :type 'integer
+  :group 'literal-string)
 
 (defcustom literal-string-editing-mode 'text-mode
   "The major mode to use in the string editing buffer."
-  :type 'symbol)
+  :type 'symbol
+  :group 'literal-string)
 
 (make-variable-buffer-local 'literal-string-editing-mode)
 
-(defun literal-string--prepare-buffer ()
+(defcustom literal-string-default-indent-level-alist
+  '((clojure-mode . 2)
+    (elisp-mode . 0))
+  "Indentation level per mode.
+
+This can be overridden by `literal-string-default-indent-level`."
+  :type 'alist
+  :group 'literal-string)
+
+(defcustom literal-string-default-indent-level nil
+  "The default indent level.
+
+Will be used when committing multi-line strings.  Setting this
+variable to non-nil overrides values defined in
+`literal-string-default-indent-level-alist`.  Use 0 if you want
+to force non-indenting behaviour.
+
+This is intended to be used on a file-local or dir-local basis."
+  :type 'sexp
+  :group 'literal-string)
+
+(make-variable-buffer-local 'literal-string-default-indent-level)
+
+(defcustom literal-string-force-indent nil
+  "When t, re-indent using the default indent level.
+
+When nil, preserve previous indentation.  See
+`literal-string-get-default-indent-level` on how to customize the
+amount of indentation."
+  :type 'boolean
+  :group 'literal-string)
+
+(make-variable-buffer-local 'literal-string-force-indent)
+
+(defun literal-string-get-default-indent-level ()
+  "Return the default indent level for docstrings buffer.
+
+This gets its value from `literal-string-default-indent-level`, if
+set, otherwise it will look up the source buffer's major mode in
+`literal-string-default-indent-level-alist`."
+  (or literal-string-default-indent-level
+      (cdr (or (assoc major-mode literal-string-default-indent-level-alist)
+               (assoc nil literal-string-default-indent-level-alist)))))
+
+(defun literal-string--prepare-buffer (default-indent-level force-p)
   "Prepare the edit-indirect buffer for editing.
 
 Unescapes characters and undoes additional indentation of
 multi-line strings, registers a hook to restore them when
-committing changes."
+committing changes.
+
+DEFAULT-INDENT-LEVEL specifies the number of spaces to use for
+indentation.  When FORCE-P is `t`, use DEFAULT-INDENT-LEVEL always,
+instead of using previous indentation."
   (literal-string--unescape)
-  (let ((indent-level (literal-string--docstring-deindent)))
+  (let* ((previous-indent-level (literal-string--docstring-deindent))
+         (indent-level (if force-p
+                           default-indent-level
+                         (or previous-indent-level default-indent-level))))
     (add-hook 'edit-indirect-before-commit-hook
               (lambda ()
                 (literal-string--cleanup-region indent-level))
@@ -186,8 +239,8 @@ committing changes."
 (defun literal-string--cleanup-region (indent-level)
   "Prepare edited string literal for re-insertion in source buffer.
 
-   Use INDENT-LEVEL provided by previous invocation of
-   `literal-string--docstring-deindent`."
+Use INDENT-LEVEL provided by previous invocation of
+`literal-string--docstring-deindent`."
   (save-match-data
     (literal-string--escape)
     (literal-string--docstring-reindent indent-level)))
@@ -197,16 +250,29 @@ committing changes."
   "Edit current string literal in a separate buffer.
 
 Uses `edit-indirect-mode`.  Use `edit-indirect-commit` to end
-editing."
+editing.
+
+After committing the editing buffer, quotes and escape sequences
+are correctly escaped and indentation of multi-line strings is
+reinserted.
+
+When a string was a single line (or blank) and is converted to a
+multi-line paragraph, following lines are indented by the amount
+specified by `literal-string-get-default-indent-level`.
+
+Multi-line strings keep their earlier indentation level unless
+`literal-string-force-indent` is set."
   (interactive)
   (require 'edit-indirect)
   (if-let (region (literal-string--region))
       (let ((mode literal-string-editing-mode) ;; buffer local, so get it out before switching
-            (existing-buffer (edit-indirect--search-for-edit-indirect (car region) (cadr region))))
+            (indent-level (literal-string-get-default-indent-level))
+            (existing-buffer (edit-indirect--search-for-edit-indirect (car region) (cadr region)))
+            (force-p literal-string-force-indent))
         (with-current-buffer (edit-indirect-region (car region) (cadr region) t)
           (when (null existing-buffer)
             (funcall mode)
-            (literal-string--prepare-buffer))))
+            (literal-string--prepare-buffer indent-level force-p))))
     (user-error "Not at a string literal")))
 
 (defvar literal-string-mode-keymap
@@ -227,7 +293,3 @@ quotes and docstring indentation."
 (provide 'literal-string)
 
 ;;; literal-string.el ends here
-
-;; Local Variables:
-;; literal-string-editing-mode: markdown-mode
-;; End:
