@@ -147,12 +147,16 @@ Use INDENT-LEVEL provided by previous invocation of
 (defun literal-string--unescape ()
   "Unescape quotes and backslashes in buffer."
   (literal-string--replace-all "\\\"" "\"")
-  (literal-string--replace-all "\\\\" "\\"))
+  (literal-string--replace-all "\\\\" "\\")
+  (literal-string--replace-all "\\r" "\r")
+  (literal-string--replace-all "\\n" "\n"))
 
 (defun literal-string--escape ()
   "Escape quotes and backslashes in buffer."
   (literal-string--replace-all "\\" "\\\\")
-  (literal-string--replace-all "\"" "\\\""))
+  (literal-string--replace-all "\"" "\\\"")
+  (literal-string--replace-all "\r" "\\r")
+  (literal-string--replace-all "\n" "\\n"))
 
 (defgroup literal-string
   ()
